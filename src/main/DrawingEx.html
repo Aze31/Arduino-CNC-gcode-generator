@@ -1,0 +1,197 @@
+ <html>
+    <script type="text/javascript">
+        //future steps (updated): add two different variables to modify the precision and time-efficiency of the points plotted. 
+        // The first variable is going to be tolerance, all points within tolerance will be ignored for code export
+        //The second variable is 
+
+    var canvas, ctx, flag = false,
+        prevX = 0,
+        currX = 0,
+        prevY = 0,
+        currY = 0,
+        dot_flag = false;
+
+    var x = "black",
+        y = 2;
+    
+    var allPoses = [ //allPoses stores coordinates of the drawing
+        {x:400,y:400},
+        {x: 0, y: 0}
+    ];
+    
+    function init() {
+        canvas = document.getElementById('can');
+        ctx = canvas.getContext("2d");
+        w = canvas.width;
+        h = canvas.height;
+    
+        canvas.addEventListener("mousemove", function (e) {
+            findxy('move', e)
+        }, false);
+        canvas.addEventListener("mousedown", function (e) {
+            findxy('down', e)
+        }, false);
+        canvas.addEventListener("mouseup", function (e) {
+            findxy('up', e)
+        }, false);
+        canvas.addEventListener("mouseout", function (e) {
+            findxy('out', e)
+        }, false);
+    }
+    
+    function color(obj) {
+        switch (obj.id) {
+            case "green":
+                x = "green";
+                break;
+            case "blue":
+                x = "blue";
+                break;
+            case "red":
+                x = "red";
+                break;
+            case "yellow":
+                x = "yellow";
+                break;
+            case "orange":
+                x = "orange";
+                break;
+            case "black":
+                x = "black";
+                break;
+            case "white":
+                x = "white";
+                break;
+        }
+        if (x == "white") y = 14;
+        else y = 2;
+        allPoses.push(
+        {
+            x:"Color = " + obj.id, 
+            y: 0
+        });
+    }
+    
+    function draw() {
+        ctx.beginPath();
+        ctx.moveTo(prevX, prevY);
+        ctx.lineTo(currX, currY);
+        ctx.strokeStyle = x;
+        ctx.lineWidth = y;
+        ctx.stroke();
+        ctx.closePath();
+    }
+    
+    function erase() {
+        var m = confirm("Want to clear");
+        if (m) {
+            ctx.clearRect(0, 0, w, h);
+            document.getElementById("canvasimg").style.display = "none";
+        }
+        allPoses = [{x:0,y:0}];
+    }
+    
+    function save() {
+        document.getElementById("canvasimg").style.border = "2px solid";
+        var dataURL = canvas.toDataURL();
+        document.getElementById("canvasimg").src = dataURL;
+        document.getElementById("canvasimg").style.display = "inline";
+    }
+
+    function getAllPoses() {
+        //pose bounds are 0-400 for x and y (fortunately its square so that makes things easier)
+        //additionally top-left is 0,0 and bottom right is 400,400
+        //also find a way to break the paths down into fewer points
+
+        //reformat output to fit REAL code
+        //in other words, make this interpretation less literal and BETTER
+        // const color = "Color = " + x + "\n";
+        const csvContent = allPoses
+            .map(pos => `${pos.x},${pos.y}`)
+            .join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "gcode.txt";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function storePose(x,y){
+        //add math to convert these coordinates from canvas -> steppers
+        allPoses.push({x: x, y: y});
+    }
+
+    function penUp(){ //doesn't actually lift the HTML pen, but it adds a marker in the list to code for a stop.
+        allPoses.push(
+            {
+                x:"PEN_UP",
+                y:0
+            }
+        );
+    }
+    function penDown(){
+        allPoses.push(
+            {
+                x: "PEN_DOWN",
+                y:0
+            }
+        );
+    }
+
+    function findxy(res, e) {
+        if (res == 'down') {
+            prevX = currX;
+            prevY = currY;
+            currX = e.clientX - canvas.offsetLeft;
+            currY = e.clientY - canvas.offsetTop;
+    
+            flag = true;
+            dot_flag = true;
+            if (dot_flag) {
+                ctx.beginPath();
+                ctx.fillStyle = x;
+                ctx.fillRect(currX, currY, 2, 2);
+                ctx.closePath();
+                dot_flag = false;
+            }
+        }
+        if (res == 'up' || res == "out") {
+            flag = false;
+        }
+        if (res == 'move') {
+            if (flag) {
+                prevX = currX;
+                prevY = currY;
+                currX = e.clientX - canvas.offsetLeft;
+                currY = e.clientY - canvas.offsetTop;
+                draw();
+                storePose(currX, currY); //fix frequency here
+            }
+        }
+    }
+    //add functionality for color changes...
+    </script>
+    <body onload="init()">
+        <canvas id="can" width="400" height="400" style="position:absolute;top:10%;left:10%;border:2px solid;"></canvas>
+        <div style="position:absolute;top:12%;left:43%;">Choose Color</div>
+        
+        <div style="position:absolute;top:15%;left:45%;width:10px;height:10px;background:green;" id="green" onclick="color(this)"></div>
+        <div style="position:absolute;top:15%;left:46%;width:10px;height:10px;background:blue;" id="blue" onclick="color(this)"></div>
+        <div style="position:absolute;top:15%;left:47%;width:10px;height:10px;background:red;" id="red" onclick="color(this)"></div>
+        <div style="position:absolute;top:17%;left:45%;width:10px;height:10px;background:yellow;" id="yellow" onclick="color(this)"></div>
+        <div style="position:absolute;top:17%;left:46%;width:10px;height:10px;background:orange;" id="orange" onclick="color(this)"></div>
+        <div style="position:absolute;top:17%;left:47%;width:10px;height:10px;background:black;" id="black" onclick="color(this)"></div>
+        <div style="position:absolute;top:20%;left:43%;">Eraser</div>
+        <div style="position:absolute;top:22%;left:45%;width:15px;height:15px;background:white;border:2px solid;" id="white" onclick="color(this)"></div>
+        <img id="canvasimg" style="position:absolute;top:10%;left:52%;" style="display:none;" alt="canvas to draw on">
+        <input type="button" value="save" id="btn" size="30" onclick="save()" style="position:absolute;top:58%;left:10%;">
+        <input type="button" value="clear" id="clr" size="23" onclick="erase()" style="position:absolute;top:58%;left:15%;">
+        <input type = "button" value="Export as Gcode (WIP)" id="exp" size="35" onclick="getAllPoses()"style="position:absolute; top:58%;left:29.5%;">
+        <input type="button" value="Pen Up" id ="pup" size=30 onclick="penUp()" style="position:absolute; top:50%; left:46%">
+        <input type="button" value="Pen Down" id="pdwn" size=30 onclick="penDown()" style="position:absolute; top:50%; left:40%">
+    </body>
+    </html>
