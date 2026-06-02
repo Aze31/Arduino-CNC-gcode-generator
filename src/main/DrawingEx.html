@@ -1,6 +1,6 @@
  <html>
     <script type="text/javascript">
-        //soon, plan to add a variable for tolerance, which is an x and y threshold for which the stepper will ignore the point and not generate code for it
+        //add a variable for tolerance, which is an x and y threshold for which the stepper will ignore the point and not generate code for it
 
     var canvas, ctx, flag = false,
         prevX = 0,
@@ -107,25 +107,28 @@
 
     function getAllPoses() {
         //pose bounds are 0-400 for x and y (fortunately its square so that makes things easier)
-        //additionally top-left is 0,0 and bottom right is 400,400
-        //also find a way to break the paths down into fewer points
+        //top-left is 0,0 and bottom right is 400,400
 
         //reformat output to fit REAL code
-        //in other words, make this interpretation less literal and BETTER
         // const color = "Color = " + x + "\n";
         const csvContent = allPoses
             .map(pos => `${pos.x},${pos.y}`)
             .join("\n");
-//change to replace above with later:
+        //change to replace the above map with later:
         // for(var i=0; i > allPoses.length(); i++){
         //     var curPose = allPoses.getElementById(i);
+        //     var prevPose = allPoses.getElementById(i-1); //var used to compare prevPose against threshold
+        //     var tolerance = 5; //max diff to not consider a distinct point
+        if(allPoses.length() >= 1 && Math.abs(curPose.x - prevPose.x) >= tolerance && Math.abs(curPose.y - prevPose.y)){
+
+        }
         //     code.push("moveToPose(" + curPose.x + " , " + curPose.y + ");");
         //     var curChange = (allChanges.getElementById(i).poseInt = i ? allChanges.getElementById(i) : 0);
         //     if(!curChange == 0){
         //         code.push((curChange ? ));
         //     }
-        // }
-        //replace this with code V
+        // }                    // |
+        //replace this with 'code' V
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -142,14 +145,16 @@
         allPoses.push({x: x, y: y});
     }
 
-    function penUp(){ //doesn't actually lift the HTML pen, but it adds a marker in the list to code for a stop.
+    function penUp(){ //adds a marker to move the servo holding the pen up
         allPoses.push(
             {
                 x:"PEN_UP",
                 y:0
             }
         );
+        allChanges.push("PenUp", allPoses.length());
     }
+
     function penDown(){
         allPoses.push(
             {
@@ -157,7 +162,8 @@
                 y:0
             }
         );
-    } // fix this, allPoses shouldn't store positions AND commands to run
+        allChanges.push("PenDown", allPoses.length());
+    }
 
     function findxy(res, e) {
         if (res == 'down') {
@@ -186,11 +192,10 @@
                 currX = e.clientX - canvas.offsetLeft;
                 currY = e.clientY - canvas.offsetTop;
                 draw();
-                storePose(currX, currY); //fix frequency here
+                storePose(currX, currY);
             }
         }
     }
-    //add functionality for color changes...
     </script>
     <body onload="init()">
         <canvas id="can" width="400" height="400" style="position:absolute;top:10%;left:10%;border:2px solid;"></canvas>
