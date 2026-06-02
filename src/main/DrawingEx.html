@@ -1,8 +1,6 @@
  <html>
     <script type="text/javascript">
-        //future steps (updated): add two different variables to modify the precision and time-efficiency of the points plotted. 
-        // The first variable is going to be tolerance, all points within tolerance will be ignored for code export
-        //The second variable is 
+        //soon, plan to add a variable for tolerance, which is an x and y threshold for which the stepper will ignore the point and not generate code for it
 
     var canvas, ctx, flag = false,
         prevX = 0,
@@ -11,6 +9,7 @@
         currY = 0,
         dot_flag = false;
 
+
     var x = "black",
         y = 2;
     
@@ -18,6 +17,14 @@
         {x:400,y:400},
         {x: 0, y: 0}
     ];
+    var code = [
+        // add initial code here
+    ];
+
+    var allChanges = [//this array should store all relevant changes to the color and pen motion
+        {event:"black", poseInt:0},
+        {event:"PenUP", poseInt:0}
+    ]; 
     
     function init() {
         canvas = document.getElementById('can');
@@ -109,6 +116,16 @@
         const csvContent = allPoses
             .map(pos => `${pos.x},${pos.y}`)
             .join("\n");
+//change to replace above with later:
+        // for(var i=0; i > allPoses.length(); i++){
+        //     var curPose = allPoses.getElementById(i);
+        //     code.push("moveToPose(" + curPose.x + " , " + curPose.y + ");");
+        //     var curChange = (allChanges.getElementById(i).poseInt = i ? allChanges.getElementById(i) : 0);
+        //     if(!curChange == 0){
+        //         code.push((curChange ? ));
+        //     }
+        // }
+        //replace this with code V
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -140,7 +157,7 @@
                 y:0
             }
         );
-    }
+    } // fix this, allPoses shouldn't store positions AND commands to run
 
     function findxy(res, e) {
         if (res == 'down') {
