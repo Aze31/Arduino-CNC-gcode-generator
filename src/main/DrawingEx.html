@@ -1,7 +1,7 @@
  <html>
     <script type="text/javascript">
         //add a variable for tolerance, which is an x and y threshold for which the stepper will ignore the point and not generate code for it
-
+        //migrating from pure allPoses to allPoses + allChanges
     var canvas, ctx, flag = false,
         prevX = 0,
         currX = 0,
@@ -17,13 +17,27 @@
         {x:400,y:400},
         {x: 0, y: 0}
     ];
-    var code = [
-        // add initial code here
+    var code = [ //this sucks
+        "#include <stepper.h>",
+        "int stepsPerRev = 200", //adjust to fit your hardware
+        "int curX = 0;",
+        "int curY = 0;",
+        "Stepper myStepper = new Stepper(stepsPerRev, 0,0,0,0);", //again, modify to fit your hardware
+        "void setup(){",
+        "myStepper.setSpeed(60);",
+        "Serial.begin(9600);}",
+        "void goToPose(x,y){",
+        "}",
+        "void loop(){",
+        ""
+
+        // add initial code here, each line is its own string
     ];
 
     var allChanges = [//this array should store all relevant changes to the color and pen motion
         {event:"black", poseInt:0},
-        {event:"PenUP", poseInt:0}
+        {event:"PenUP", poseInt:0},
+        {event: "PenDOWN", poseInt:0}
     ]; 
     
     function init() {
@@ -72,11 +86,15 @@
         }
         if (x == "white") y = 14;
         else y = 2;
-        allPoses.push(
-        {
-            x:"Color = " + obj.id, 
-            y: 0
-        });
+        // allPoses.push(
+        // {
+        //     x:"Color = " + obj.id, 
+        //     y: 0
+        // });
+        allChanges.push(
+            {event: "setColor(" + obj.id + ");", 
+            poseInt: allPoses.length}
+        );
     }
     
     function draw() {
@@ -96,6 +114,7 @@
             document.getElementById("canvasimg").style.display = "none";
         }
         allPoses = [{x:0,y:0}];
+        allChanges = [{event:"PenUP", poseInt:0},{event:"PenDOWN", poseInt:0}];
     }
     
     function save() {
@@ -104,31 +123,37 @@
         document.getElementById("canvasimg").src = dataURL;
         document.getElementById("canvasimg").style.display = "inline";
     }
-
+    
     function getAllPoses() {
         //pose bounds are 0-400 for x and y (fortunately its square so that makes things easier)
         //top-left is 0,0 and bottom right is 400,400
 
         //reformat output to fit REAL code
         // const color = "Color = " + x + "\n";
-        const csvContent = allPoses
-            .map(pos => `${pos.x},${pos.y}`)
-            .join("\n");
+        // const csvContent = allPoses
+        //     .map(pos => `${pos.x},${pos.y}`)
+        //     .join("\n");
         //change to replace the above map with later:
-        // for(var i=0; i > allPoses.length(); i++){
-        //     var curPose = allPoses.getElementById(i);
-        //     var prevPose = allPoses.getElementById(i-1); //var used to compare prevPose against threshold
-        //     var tolerance = 5; //max diff to not consider a distinct point
-        if(allPoses.length() >= 1 && Math.abs(curPose.x - prevPose.x) >= tolerance && Math.abs(curPose.y - prevPose.y)){
-
+        for(var i=0; i < allPoses.length; i++){
+            var curPose = allPoses[i];
+            var prevPose = i > 0 ? allPoses[i-1] : null; //var used to compare prevPose against threshold
+            var tolerance = 5; //max diff to not consider a distinct point
+            //runs checks to make sure that 
+            if(allPoses.length <= 1 || (prevPose && !(Math.abs(curPose.x - prevPose.x) >= tolerance && Math.abs(curPose.y - prevPose.y) >= tolerance))){
+                code.push("moveToPose(" + curPose.x + " , " + curPose.y + ");");
+                //if this is the first pose, then automatically push the new pose. 
+                //If this isn't the first pose, then check to make sure it's at least 5 away in both x and y from the previous pose.
+           }
+           //at each iteration, check all changes to see which match the current position
+           allChanges.forEach(change => {
+            if(change.poseInt == i){
+                code.push((change.event.includes("setColor") ? change.event : (change.event + "();")));
+            }});
         }
-        //     code.push("moveToPose(" + curPose.x + " , " + curPose.y + ");");
-        //     var curChange = (allChanges.getElementById(i).poseInt = i ? allChanges.getElementById(i) : 0);
-        //     if(!curChange == 0){
-        //         code.push((curChange ? ));
-        //     }
-        // }                    // |
-        //replace this with 'code' V
+        const csvContent = code
+            .map(line => line)
+            .join("\n");
+
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -146,23 +171,23 @@
     }
 
     function penUp(){ //adds a marker to move the servo holding the pen up
-        allPoses.push(
-            {
-                x:"PEN_UP",
-                y:0
-            }
-        );
-        allChanges.push("PenUp", allPoses.length());
+        // allPoses.push(
+        //     {
+        //         x:"PEN_UP",
+        //         y:0
+        //     }
+        // );
+        allChanges.push({event: "PenUp",poseInt: allPoses.length});
     }
 
     function penDown(){
-        allPoses.push(
-            {
-                x: "PEN_DOWN",
-                y:0
-            }
-        );
-        allChanges.push("PenDown", allPoses.length());
+        // allPoses.push(
+        //     {
+        //         x: "PEN_DOWN",
+        //         y:0
+        //     }
+        // );
+        allChanges.push({event:"PenDown",poseInt: allPoses.length});
     }
 
     function findxy(res, e) {
