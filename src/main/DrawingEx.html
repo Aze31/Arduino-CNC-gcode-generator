@@ -17,21 +17,35 @@
         {x:400,y:400},
         {x: 0, y: 0}
     ];
-    var code = [ //this sucks
-        "#include <stepper.h>",
-        "int stepsPerRev = 200", //adjust to fit your hardware
-        "int curX = 0;",
-        "int curY = 0;",
-        "Stepper myStepper = new Stepper(stepsPerRev, 0,0,0,0);", //again, modify to fit your hardware
+    var code = [ 
+        "#include <AccelStepper.h>",
+        "#define FULLSTEP 4",
+        "#define STP 2700",
+        "AccelStepper xStepper(FULLSTEP, 11, 9, 10, 8);",
+        "AccelStepper yStepper(FULLSTEP, 7, 5, 6, 4);",
         "void setup(){",
-        "myStepper.setSpeed(60);",
-        "Serial.begin(9600);}",
-        "void goToPose(x,y){",
-        "}",
+        "Serial.begin(9600);",
+        "xStepper.serMaxSpeed(1000.0);", //adjust to fit your hardware
+        "xStepper.serAcceleration(50.0);",
+        "xStepper.setSpeed(200);",
+        "xStepper.serCurrentPosition(0);",
+        "yStepper.serMaxSpeed(1000.0);", //adjust to fit your hardware
+        "yStepper.serAcceleration(50.0);",
+        "yStepper.setSpeed(200);",
+        "yStepper.serCurrentPosition(0);}",
         "void loop(){",
-        ""
-
-        // add initial code here, each line is its own string
+        "int zero = 0;",
+        "moveToPose(400,400);",
+        "moveToPose*(zero, zero);",
+        "}",
+        "void moveTo(int x, int y){",
+        "int real_x = map(x,0,400, STP, -STP);",
+        "int real_y = map(y,0,400,STP,-STP);",
+        "xStepper.moveTo(real_x);",
+        "yStepper.moveTo(real_y);",
+        "while(xStepper.distanceToGo() != 0 || yStepper.distanceToGo() != 0){",
+        "yStepper.run();",
+        "xStepper.run();}}",
     ];
 
     var allChanges = [//this array should store all relevant changes to the color and pen motion
