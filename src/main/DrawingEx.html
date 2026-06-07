@@ -36,16 +36,18 @@
         "void loop(){",
         "int zero = 0;",
         "moveToPose(400,400);",
-        "moveToPose*(zero, zero);",
+        "moveToPose(zero, zero);"
+    ];
+    var afterCode = [
         "}",
-        "void moveTo(int x, int y){",
+        "void moveToPose(int x, int y){",
         "int real_x = map(x,0,400, STP, -STP);",
         "int real_y = map(y,0,400,STP,-STP);",
         "xStepper.moveTo(real_x);",
         "yStepper.moveTo(real_y);",
         "while(xStepper.distanceToGo() != 0 || yStepper.distanceToGo() != 0){",
         "yStepper.run();",
-        "xStepper.run();}}",
+        "xStepper.run();}}"
     ];
 
     var allChanges = [//this array should store all relevant changes to the color and pen motion
@@ -138,33 +140,28 @@
         document.getElementById("canvasimg").style.display = "inline";
     }
     
-    function getAllPoses() {
-        //pose bounds are 0-400 for x and y (fortunately its square so that makes things easier)
-        //top-left is 0,0 and bottom right is 400,400
-
-        //reformat output to fit REAL code
-        // const color = "Color = " + x + "\n";
-        // const csvContent = allPoses
-        //     .map(pos => `${pos.x},${pos.y}`)
-        //     .join("\n");
-        //change to replace the above map with later:
+    function getAllPoses() { //pose bounds are 0-400 for x and y
+        const generatedCode = code.slice();
         for(var i=0; i < allPoses.length; i++){
             var curPose = allPoses[i];
             var prevPose = i > 0 ? allPoses[i-1] : null; //var used to compare prevPose against threshold
             var tolerance = 5; //max diff to not consider a distinct point
             //runs checks to make sure that 
             if(allPoses.length <= 1 || (prevPose && !(Math.abs(curPose.x - prevPose.x) >= tolerance && Math.abs(curPose.y - prevPose.y) >= tolerance))){
-                code.push("moveToPose(" + curPose.x + " , " + curPose.y + ");");
+                generatedCode.push("moveToPose(" + curPose.x + " , " + curPose.y + ");");
                 //if this is the first pose, then automatically push the new pose. 
                 //If this isn't the first pose, then check to make sure it's at least 5 away in both x and y from the previous pose.
            }
            //at each iteration, check all changes to see which match the current position
            allChanges.forEach(change => {
             if(change.poseInt == i){
-                code.push((change.event.includes("setColor") ? change.event : (change.event + "();")));
+                generatedCode.push((change.event.includes("setColor") ? change.event : (change.event + "();")));
             }});
         }
-        const csvContent = code
+        for(var i = 0; i < afterCode.length; i++){
+            generatedCode.push(afterCode[i]);
+        }
+        const csvContent = generatedCode
             .map(line => line)
             .join("\n");
 
@@ -180,27 +177,14 @@
     }
 
     function storePose(x,y){
-        //add math to convert these coordinates from canvas -> steppers
         allPoses.push({x: x, y: y});
     }
 
     function penUp(){ //adds a marker to move the servo holding the pen up
-        // allPoses.push(
-        //     {
-        //         x:"PEN_UP",
-        //         y:0
-        //     }
-        // );
         allChanges.push({event: "PenUp",poseInt: allPoses.length});
     }
 
     function penDown(){
-        // allPoses.push(
-        //     {
-        //         x: "PEN_DOWN",
-        //         y:0
-        //     }
-        // );
         allChanges.push({event:"PenDown",poseInt: allPoses.length});
     }
 
