@@ -20,6 +20,7 @@
         "//Credit to Aze31 for writing it.",
         "//Any consequential damage done to your hardware as a result of the use of this code is not my fault, review this code and use it at your own risk.",
         "#include <AccelStepper.h>",
+        "#include <Servo.h>",
         "#define FULLSTEP 4",
         "#define STP 2700",
         "AccelStepper xStepper(FULLSTEP, 11, 9, 10, 8);",
@@ -36,9 +37,8 @@
         "yStepper.setSpeed(200);",
         "yStepper.setCurrentPosition(0);}",
         "void loop(){",
-        "int zero = 0;",
+        "int zero = 0;", //begin by zeroing
         "PenUP();",
-        "moveToPose(400,400);",
         "moveToPose(zero, zero);",
         "PenDOWN();"
     ];
@@ -52,9 +52,9 @@
         "while(xStepper.distanceToGo() != 0 || yStepper.distanceToGo() != 0){",
         "yStepper.run();",
         "xStepper.run();}}",
-        "void penUP(){",
+        "void PenUP(){",
         "penServo.write(45);}",
-        "void penDOWN(){",
+        "void PenDOWN(){",
         "penServo.write(90);}",
     ];
 
